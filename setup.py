@@ -37,7 +37,9 @@ dev_requirements = [
     "wheel>=0.34.2",
 ]
 
-requirements = []
+requirements = [
+    "altair",
+]
 
 extra_requirements = {
     "setup": setup_requirements,
