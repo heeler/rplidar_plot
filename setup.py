@@ -39,6 +39,9 @@ dev_requirements = [
 
 requirements = [
     "altair",
+    "altair_saver",
+    "matplotlib",
+    "pandas",
 ]
 
 extra_requirements = {

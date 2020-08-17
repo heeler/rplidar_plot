@@ -11,68 +11,50 @@ Docs: https://docs.pytest.org/en/latest/
       https://docs.pytest.org/en/latest/goodpractices.html#conventions-for-python-test-discovery
 """
 
+import math
 import pytest
-from rplidar_plot import Example
+
+import rplidar_plot as rp
 
 
-# If you only have a single condition you need to test, a single test is _okay_
-# but parametrized tests are encouraged
-def test_value_change():
-    start_val = 5
-    new_val = 20
-
-    example = Example(start_val)
-    example.update_value(new_val)
-    assert example.get_value() == new_val and example.get_previous_value() == start_val
-
-
-# Generally, you should parametrize your tests, but you should include exception tests
-# like below!
+# test init
 @pytest.mark.parametrize(
-    "start_val, next_val, expected_values",
+    "index, theta, radius, quality",
     [
-        # (start_val, next_val, expected_values)
-        (5, 20, (20, 5)),
-        (10, 40, (40, 10)),
-        (1, 2, (2, 1)),
+        (0, 0.28, 2013.00, 188),  # theta: 0.28 Dist: 02013.00 Q: 188
+        (1, 0.59, 2013.00, 188),  # theta: 0.59 Dist: 02013.00 Q: 188
+        (2, 0.89, 2013.00, 188),  # theta: 0.89 Dist: 02013.00 Q: 188
+        (3, 1.20, 2013.00, 188),  # theta: 1.20 Dist: 02013.00 Q: 188
+        (-4, 358.73, 2014.00, 188),  # theta: 358.73 Dist: 02014.00 Q: 188
+        (-3, 359.10, 2013.00, 188),  # theta: 359.10 Dist: 02013.00 Q: 188
+        (-2, 359.48, 2012.00, 188),  # theta: 359.48 Dist: 02012.00 Q: 188
+        (-1, 359.95, 2013.00, 188),  # theta: 359.95 Dist: 02013.00 Q: 188
     ],
 )
-def test_parameterized_value_change(start_val, next_val, expected_values):
-    example = Example(start_val)
-    example.update_value(next_val)
-    assert expected_values == example.values
+def test_value_change(data_dir, index, theta, radius, quality):
+    container = rp.RpData(data_dir / "data.txt")
+    dp1 = container.data[index]
+    # 0.28 Dist: 02013.00 Q: 188
+    assert dp1.theta == math.pi*theta/180.0
+    assert dp1.radius == radius
+    assert dp1.quality == quality
 
 
-# The best practice would be to parametrize your tests, and include tests for any
-# exceptions that would occur
 @pytest.mark.parametrize(
-    "start_val, next_val, expected_values",
+    "r, theta, x, y",
     [
-        # (start_val, next_val, expected_values)
-        (5, 20, (20, 5)),
-        (10, 40, (40, 10)),
-        (1, 2, (2, 1)),
-        pytest.param(
-            "hello",
-            None,
-            None,
-            marks=pytest.mark.raises(
-                exception=ValueError
-            ),  # Init value isn't an integer
-        ),
-        pytest.param(
-            1,
-            "hello",
-            None,
-            marks=pytest.mark.raises(
-                exception=ValueError
-            ),  # Update value isn't an integer
-        ),
+        (math.sqrt(2.0), math.pi/4.0, 1.0, 1.0),  # 45
+        (math.sqrt(2.0), 3.0*math.pi/4.0, -1.0, 1.0),  # 135
+        (math.sqrt(2.0), 5.0*math.pi/4.0, -1.0, -1.0),  # 225
+        (math.sqrt(2.0), 7.0*math.pi/4.0, 1.0, -1.0),  # 315
     ],
 )
-def test_parameterized_value_change_with_exceptions(
-    start_val, next_val, expected_values
-):
-    example = Example(start_val)
-    example.update_value(next_val)
-    assert expected_values == example.values
+def test_xy_convert(data_dir, r, theta, x, y):
+    dp = rp.DataPoint(theta=theta, radius=r, quality=188)
+    assert dp.x == pytest.approx(x, 0.001)
+    assert dp.y == pytest.approx(y, 0.001)
+
+
+def test_plot(data_dir):
+    dp = rp.RpData(filename=data_dir/"data.txt")
+    dp.plot()
